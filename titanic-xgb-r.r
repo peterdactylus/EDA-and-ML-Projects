@@ -1,1 +1,95 @@
-{"metadata":{"kernelspec":{"name":"ir","display_name":"R","language":"R"},"language_info":{"name":"R","codemirror_mode":"r","pygments_lexer":"r","mimetype":"text/x-r-source","file_extension":".r","version":"4.0.5"}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"# This R environment comes with many helpful analytics packages installed\n# It is defined by the kaggle/rstats Docker image: https://github.com/kaggle/docker-rstats\n# For example, here's a helpful package to load\n\nlibrary(tidyverse) # metapackage of all tidyverse packages\nlibrary(data.table)\nlibrary(tidymodels)\nlibrary(doParallel)\nlibrary(themis)\n\n# Input data files are available in the read-only \"../input/\" directory\n# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n\nlist.files(path = \"../input\")\n\n# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session","metadata":{"_uuid":"051d70d956493feee0c6d64651c6a088724dca2a","_execution_state":"idle","execution":{"iopub.status.busy":"2022-02-19T14:38:05.989091Z","iopub.execute_input":"2022-02-19T14:38:05.990712Z","iopub.status.idle":"2022-02-19T14:38:06.017877Z"},"trusted":true},"execution_count":22,"outputs":[{"output_type":"display_data","data":{"text/html":"'titanic'","text/markdown":"'titanic'","text/latex":"'titanic'","text/plain":"[1] \"titanic\""},"metadata":{}}]},{"cell_type":"code","source":"train <- read_csv(\"../input/titanic/train.csv\")\ntest <- read_csv(\"../input/titanic/test.csv\")\ntrain <- as.data.table(train)\ntest <- as.data.table(test)","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:38:06.020252Z","iopub.execute_input":"2022-02-19T14:38:06.021607Z","iopub.status.idle":"2022-02-19T14:38:06.178363Z"},"trusted":true},"execution_count":23,"outputs":[{"name":"stderr","text":"\u001b[1m\u001b[1mRows: \u001b[1m\u001b[22m\u001b[34m\u001b[34m891\u001b[34m\u001b[39m \u001b[1m\u001b[1mColumns: \u001b[1m\u001b[22m\u001b[34m\u001b[34m12\u001b[34m\u001b[39m\n\n\u001b[36m──\u001b[39m \u001b[1m\u001b[1mColumn specification\u001b[1m\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n\u001b[1mDelimiter:\u001b[22m \",\"\n\u001b[31mchr\u001b[39m (5): Name, Sex, Ticket, Cabin, Embarked\n\u001b[32mdbl\u001b[39m (7): PassengerId, Survived, Pclass, Age, SibSp, Parch, Fare\n\n\n\u001b[36mℹ\u001b[39m Use \u001b[30m\u001b[47m\u001b[30m\u001b[47m`spec()`\u001b[47m\u001b[30m\u001b[49m\u001b[39m to retrieve the full column specification for this data.\n\u001b[36mℹ\u001b[39m Specify the column types or set \u001b[30m\u001b[47m\u001b[30m\u001b[47m`show_col_types = FALSE`\u001b[47m\u001b[30m\u001b[49m\u001b[39m to quiet this message.\n\n\u001b[1m\u001b[1mRows: \u001b[1m\u001b[22m\u001b[34m\u001b[34m418\u001b[34m\u001b[39m \u001b[1m\u001b[1mColumns: \u001b[1m\u001b[22m\u001b[34m\u001b[34m11\u001b[34m\u001b[39m\n\n\u001b[36m──\u001b[39m \u001b[1m\u001b[1mColumn specification\u001b[1m\u001b[22m \u001b[36m────────────────────────────────────────────────────────\u001b[39m\n\u001b[1mDelimiter:\u001b[22m \",\"\n\u001b[31mchr\u001b[39m (5): Name, Sex, Ticket, Cabin, Embarked\n\u001b[32mdbl\u001b[39m (6): PassengerId, Pclass, Age, SibSp, Parch, Fare\n\n\n\u001b[36mℹ\u001b[39m Use \u001b[30m\u001b[47m\u001b[30m\u001b[47m`spec()`\u001b[47m\u001b[30m\u001b[49m\u001b[39m to retrieve the full column specification for this data.\n\u001b[36mℹ\u001b[39m Specify the column types or set \u001b[30m\u001b[47m\u001b[30m\u001b[47m`show_col_types = FALSE`\u001b[47m\u001b[30m\u001b[49m\u001b[39m to quiet this message.\n\n","output_type":"stream"}]},{"cell_type":"code","source":"train[grep(\"Mr.\", train$Name), Title := \"Mr.\"]\ntrain[grep(\"Mrs.\", train$Name), Title := \"Mrs.\"]\ntrain[grep(\"Miss.\", train$Name), Title := \"Miss.\"]\n\ntest[grep(\"Mr.\", test$Name), Title := \"Mr.\"]\ntest[grep(\"Mrs.\", test$Name), Title := \"Mrs.\"]\ntest[grep(\"Miss.\", test$Name), Title := \"Miss.\"]\n\ntrain[, Survived := as.character(Survived)]","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:38:06.180698Z","iopub.execute_input":"2022-02-19T14:38:06.182081Z","iopub.status.idle":"2022-02-19T14:38:06.211367Z"},"trusted":true},"execution_count":24,"outputs":[]},{"cell_type":"code","source":"head(train)","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:38:06.213652Z","iopub.execute_input":"2022-02-19T14:38:06.214998Z","iopub.status.idle":"2022-02-19T14:38:06.240722Z"},"trusted":true},"execution_count":25,"outputs":[{"output_type":"display_data","data":{"text/html":"<table class=\"dataframe\">\n<caption>A data.table: 6 × 13</caption>\n<thead>\n\t<tr><th scope=col>PassengerId</th><th scope=col>Survived</th><th scope=col>Pclass</th><th scope=col>Name</th><th scope=col>Sex</th><th scope=col>Age</th><th scope=col>SibSp</th><th scope=col>Parch</th><th scope=col>Ticket</th><th scope=col>Fare</th><th scope=col>Cabin</th><th scope=col>Embarked</th><th scope=col>Title</th></tr>\n\t<tr><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;chr&gt;</th></tr>\n</thead>\n<tbody>\n\t<tr><td>1</td><td>0</td><td>3</td><td>Braund, Mr. Owen Harris                            </td><td>male  </td><td>22</td><td>1</td><td>0</td><td>A/5 21171       </td><td> 7.2500</td><td>NA  </td><td>S</td><td>Mr.  </td></tr>\n\t<tr><td>2</td><td>1</td><td>1</td><td>Cumings, Mrs. John Bradley (Florence Briggs Thayer)</td><td>female</td><td>38</td><td>1</td><td>0</td><td>PC 17599        </td><td>71.2833</td><td>C85 </td><td>C</td><td>Mrs. </td></tr>\n\t<tr><td>3</td><td>1</td><td>3</td><td>Heikkinen, Miss. Laina                             </td><td>female</td><td>26</td><td>0</td><td>0</td><td>STON/O2. 3101282</td><td> 7.9250</td><td>NA  </td><td>S</td><td>Miss.</td></tr>\n\t<tr><td>4</td><td>1</td><td>1</td><td>Futrelle, Mrs. Jacques Heath (Lily May Peel)       </td><td>female</td><td>35</td><td>1</td><td>0</td><td>113803          </td><td>53.1000</td><td>C123</td><td>S</td><td>Mrs. </td></tr>\n\t<tr><td>5</td><td>0</td><td>3</td><td>Allen, Mr. William Henry                           </td><td>male  </td><td>35</td><td>0</td><td>0</td><td>373450          </td><td> 8.0500</td><td>NA  </td><td>S</td><td>Mr.  </td></tr>\n\t<tr><td>6</td><td>0</td><td>3</td><td>Moran, Mr. James                                   </td><td>male  </td><td>NA</td><td>0</td><td>0</td><td>330877          </td><td> 8.4583</td><td>NA  </td><td>Q</td><td>Mr.  </td></tr>\n</tbody>\n</table>\n","text/markdown":"\nA data.table: 6 × 13\n\n| PassengerId &lt;dbl&gt; | Survived &lt;chr&gt; | Pclass &lt;dbl&gt; | Name &lt;chr&gt; | Sex &lt;chr&gt; | Age &lt;dbl&gt; | SibSp &lt;dbl&gt; | Parch &lt;dbl&gt; | Ticket &lt;chr&gt; | Fare &lt;dbl&gt; | Cabin &lt;chr&gt; | Embarked &lt;chr&gt; | Title &lt;chr&gt; |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| 1 | 0 | 3 | Braund, Mr. Owen Harris                             | male   | 22 | 1 | 0 | A/5 21171        |  7.2500 | NA   | S | Mr.   |\n| 2 | 1 | 1 | Cumings, Mrs. John Bradley (Florence Briggs Thayer) | female | 38 | 1 | 0 | PC 17599         | 71.2833 | C85  | C | Mrs.  |\n| 3 | 1 | 3 | Heikkinen, Miss. Laina                              | female | 26 | 0 | 0 | STON/O2. 3101282 |  7.9250 | NA   | S | Miss. |\n| 4 | 1 | 1 | Futrelle, Mrs. Jacques Heath (Lily May Peel)        | female | 35 | 1 | 0 | 113803           | 53.1000 | C123 | S | Mrs.  |\n| 5 | 0 | 3 | Allen, Mr. William Henry                            | male   | 35 | 0 | 0 | 373450           |  8.0500 | NA   | S | Mr.   |\n| 6 | 0 | 3 | Moran, Mr. James                                    | male   | NA | 0 | 0 | 330877           |  8.4583 | NA   | Q | Mr.   |\n\n","text/latex":"A data.table: 6 × 13\n\\begin{tabular}{lllllllllllll}\n PassengerId & Survived & Pclass & Name & Sex & Age & SibSp & Parch & Ticket & Fare & Cabin & Embarked & Title\\\\\n <dbl> & <chr> & <dbl> & <chr> & <chr> & <dbl> & <dbl> & <dbl> & <chr> & <dbl> & <chr> & <chr> & <chr>\\\\\n\\hline\n\t 1 & 0 & 3 & Braund, Mr. Owen Harris                             & male   & 22 & 1 & 0 & A/5 21171        &  7.2500 & NA   & S & Mr.  \\\\\n\t 2 & 1 & 1 & Cumings, Mrs. John Bradley (Florence Briggs Thayer) & female & 38 & 1 & 0 & PC 17599         & 71.2833 & C85  & C & Mrs. \\\\\n\t 3 & 1 & 3 & Heikkinen, Miss. Laina                              & female & 26 & 0 & 0 & STON/O2. 3101282 &  7.9250 & NA   & S & Miss.\\\\\n\t 4 & 1 & 1 & Futrelle, Mrs. Jacques Heath (Lily May Peel)        & female & 35 & 1 & 0 & 113803           & 53.1000 & C123 & S & Mrs. \\\\\n\t 5 & 0 & 3 & Allen, Mr. William Henry                            & male   & 35 & 0 & 0 & 373450           &  8.0500 & NA   & S & Mr.  \\\\\n\t 6 & 0 & 3 & Moran, Mr. James                                    & male   & NA & 0 & 0 & 330877           &  8.4583 & NA   & Q & Mr.  \\\\\n\\end{tabular}\n","text/plain":"  PassengerId Survived Pclass\n1 1           0        3     \n2 2           1        1     \n3 3           1        3     \n4 4           1        1     \n5 5           0        3     \n6 6           0        3     \n  Name                                                Sex    Age SibSp Parch\n1 Braund, Mr. Owen Harris                             male   22  1     0    \n2 Cumings, Mrs. John Bradley (Florence Briggs Thayer) female 38  1     0    \n3 Heikkinen, Miss. Laina                              female 26  0     0    \n4 Futrelle, Mrs. Jacques Heath (Lily May Peel)        female 35  1     0    \n5 Allen, Mr. William Henry                            male   35  0     0    \n6 Moran, Mr. James                                    male   NA  0     0    \n  Ticket           Fare    Cabin Embarked Title\n1 A/5 21171         7.2500 NA    S        Mr.  \n2 PC 17599         71.2833 C85   C        Mrs. \n3 STON/O2. 3101282  7.9250 NA    S        Miss.\n4 113803           53.1000 C123  S        Mrs. \n5 373450            8.0500 NA    S        Mr.  \n6 330877            8.4583 NA    Q        Mr.  "},"metadata":{}}]},{"cell_type":"code","source":"train_set <- train[, .(Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked, Title)]\ntest_set <- test[, .(Pclass, Sex, Age, SibSp, Parch, Fare, Embarked, Title)]","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:38:06.242970Z","iopub.execute_input":"2022-02-19T14:38:06.244260Z","iopub.status.idle":"2022-02-19T14:38:06.259566Z"},"trusted":true},"execution_count":26,"outputs":[]},{"cell_type":"code","source":"xgb_spec <- boost_tree(\n  trees = 750,\n  tree_depth = tune(), min_n = tune(), loss_reduction = tune(), \n  sample_size = tune(), mtry = tune(), learn_rate = tune()\n) %>% \n  set_mode(\"classification\") %>%\n  set_engine(\"xgboost\", validation = 0.2)\n\ncust_rec <- \n    recipe(Survived ~ ., data = train_set) %>%\n    step_normalize(all_numeric_predictors()) %>%\n    step_dummy(all_nominal_predictors(), one_hot = T) %>%\n    step_nzv(all_predictors()) %>%\n    themis::step_upsample(Survived) %>%\n    prep()\n\ntest_baked <- bake(cust_rec, new_data = test_set)\n\n#wf <- workflow(cust_rec, xgb_spec)\n\nfolds <- vfold_cv(juice(cust_rec), v = 10 ,strata = Survived)\n  \nxgb_grid <- grid_latin_hypercube(\n    tree_depth(), \n    min_n(),\n    loss_reduction(),\n    sample_size = sample_prop(),\n    finalize(mtry(), train_set[, -c(\"Survived\")]),\n    learn_rate(),\n    size = 25\n    )","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:38:06.261877Z","iopub.execute_input":"2022-02-19T14:38:06.263162Z","iopub.status.idle":"2022-02-19T14:38:06.491813Z"},"trusted":true},"execution_count":27,"outputs":[{"name":"stderr","text":"Warning message:\n“There are new levels in a factor: NA”\nWarning message:\n“There are new levels in a factor: NA”\nWarning message:\n“There are new levels in a factor: NA”\n","output_type":"stream"}]},{"cell_type":"code","source":"c <- detectCores()\nregisterDoParallel(cores = c)\nrm(c)\n  \nptm <- proc.time()\nxgb_res <- tune_grid(\n    xgb_spec, \n    Survived ~ .,\n    resamples = folds,\n    grid = xgb_grid,\n    metrics = metric_set(accuracy)\n)\nprint(proc.time() - ptm)\n  \nstopImplicitCluster()","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:38:06.495340Z","iopub.execute_input":"2022-02-19T14:38:06.497619Z","iopub.status.idle":"2022-02-19T14:39:40.334824Z"},"trusted":true},"execution_count":28,"outputs":[{"name":"stdout","text":"   user  system elapsed \n315.328   5.817  93.797 \n","output_type":"stream"}]},{"cell_type":"code","source":"xgb_final <- finalize_model(xgb_spec, select_best(xgb_res, metric = \"accuracy\"))\nxgb_model <- fit(xgb_final, Survived ~ ., juice(cust_rec))\npred <- predict(xgb_model, test_baked)","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:39:44.606793Z","iopub.execute_input":"2022-02-19T14:39:44.609156Z","iopub.status.idle":"2022-02-19T14:39:45.532612Z"},"trusted":true},"execution_count":30,"outputs":[{"name":"stdout","text":"[14:39:45] WARNING: amalgamation/../src/learner.cc:1095: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'binary:logistic' was changed from 'error' to 'logloss'. Explicitly set eval_metric if you'd like to restore the old behavior.\n","output_type":"stream"}]},{"cell_type":"code","source":"sub <- as.data.table(cbind(test[, .(PassengerId)], pred))\nsetnames(sub, \".pred_class\", \"Survived\")\nwrite_csv(sub, \"submission.csv\")","metadata":{"execution":{"iopub.status.busy":"2022-02-19T14:53:40.760876Z","iopub.execute_input":"2022-02-19T14:53:40.762526Z","iopub.status.idle":"2022-02-19T14:53:40.798760Z"},"trusted":true},"execution_count":35,"outputs":[]}]}
+# %% [code] {"_execution_state":"idle","execution":{"iopub.status.busy":"2022-02-19T16:38:03.077381Z","iopub.execute_input":"2022-02-19T16:38:03.079639Z","iopub.status.idle":"2022-02-19T16:38:06.674316Z"}}
+library(tidyverse)
+library(data.table)
+library(tidymodels)
+library(doParallel)
+library(themis)
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T16:38:11.421707Z","iopub.execute_input":"2022-02-19T16:38:11.451742Z","iopub.status.idle":"2022-02-19T16:38:11.77579Z"}}
+train <- read_csv("../input/titanic/train.csv")
+test <- read_csv("../input/titanic/test.csv")
+train <- as.data.table(train)
+test <- as.data.table(test)
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T16:38:14.665613Z","iopub.execute_input":"2022-02-19T16:38:14.667101Z","iopub.status.idle":"2022-02-19T16:38:14.728668Z"}}
+train[grep("Mr.", train$Name), Title := "Mr."]
+train[grep("Mrs.", train$Name), Title := "Mrs."]
+train[grep("Miss.", train$Name), Title := "Miss."]
+
+test[grep("Mr.", test$Name), Title := "Mr."]
+test[grep("Mrs.", test$Name), Title := "Mrs."]
+test[grep("Miss.", test$Name), Title := "Miss."]
+
+train[, Pclass := as.character(Pclass)]
+test[, Pclass := as.character(Pclass)]
+
+train[, Survived := as.character(Survived)]
+
+head(train)
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T16:38:20.3563Z","iopub.execute_input":"2022-02-19T16:38:20.357876Z","iopub.status.idle":"2022-02-19T16:38:20.389956Z"}}
+train_set <- train[, .(Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked, Title)]
+test_set <- test[, .(Pclass, Sex, Age, SibSp, Parch, Fare, Embarked, Title)]
+
+head(train_set)
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T16:39:11.338226Z","iopub.execute_input":"2022-02-19T16:39:11.339791Z","iopub.status.idle":"2022-02-19T16:39:11.60745Z"}}
+xgb_spec <- boost_tree(
+  trees = 500,
+  tree_depth = tune(), min_n = tune(), loss_reduction = tune(), 
+  sample_size = tune(), mtry = tune(), learn_rate = tune()
+) %>% 
+  set_mode("classification") %>%
+  set_engine("xgboost", validation = 0.2)
+
+cust_rec <- 
+    recipe(Survived ~ ., data = train_set) %>%
+    step_normalize(all_numeric_predictors()) %>%
+    step_dummy(all_nominal_predictors(), one_hot = T) %>%
+    step_nzv(all_predictors()) %>%
+    themis::step_upsample(Survived) %>%
+    prep()
+
+test_baked <- bake(cust_rec, new_data = test_set)
+
+folds <- vfold_cv(juice(cust_rec), v = 10 ,strata = Survived)
+  
+xgb_grid <- grid_latin_hypercube(
+    tree_depth(), 
+    min_n(),
+    loss_reduction(),
+    sample_size = sample_prop(),
+    finalize(mtry(), train_set[, -c("Survived")]),
+    learn_rate(), 
+    size = 25
+    )
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T16:39:19.892497Z","iopub.execute_input":"2022-02-19T16:39:19.894169Z","iopub.status.idle":"2022-02-19T16:40:29.953503Z"}}
+c <- detectCores()
+registerDoParallel(cores = c)
+rm(c)
+  
+ptm <- proc.time()
+xgb_res <- tune_grid(
+    xgb_spec, 
+    Survived ~ .,
+    resamples = folds,
+    grid = xgb_grid,
+    metrics = metric_set(accuracy)
+)
+print(proc.time() - ptm)
+  
+stopImplicitCluster()
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T16:40:42.186551Z","iopub.execute_input":"2022-02-19T16:40:42.188452Z","iopub.status.idle":"2022-02-19T16:40:42.26279Z"}}
+show_best(xgb_res, metric = "accuracy", n = 10)
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T14:39:44.606793Z","iopub.execute_input":"2022-02-19T14:39:44.609156Z","iopub.status.idle":"2022-02-19T14:39:45.532612Z"}}
+xgb_final <- finalize_model(xgb_spec, select_best(xgb_res, metric = "accuracy"))
+xgb_model <- fit(xgb_final, Survived ~ ., juice(cust_rec))
+pred <- predict(xgb_model, test_baked)
+
+# %% [code] {"execution":{"iopub.status.busy":"2022-02-19T14:53:40.760876Z","iopub.execute_input":"2022-02-19T14:53:40.762526Z","iopub.status.idle":"2022-02-19T14:53:40.79876Z"}}
+sub <- as.data.table(cbind(test[, .(PassengerId)], pred))
+setnames(sub, ".pred_class", "Survived")
+write_csv(sub, "submission.csv")
