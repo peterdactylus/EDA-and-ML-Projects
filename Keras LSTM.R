@@ -5,7 +5,7 @@ library(tidymodels)
 library(readxl)
 library(GGally)
 
-coins <- read_xlsx("crypto_60min.xlsx", sheet = 2)
+coins <- read_xlsx("crypto_lstm.xlsx", sheet = 2)
 coins <- as.data.table(coins)
 
 ggcorr(coins, label = T, label_round = 2)
@@ -33,7 +33,7 @@ set <- data.table()
 for(i in 1:ncol(coins)) {
   coin <- coins[, ..i]
   tmp <- c()
-  for(j in 1:(nrow(coin) - 16)) {
+  for(j in 1:(nrow(coin) - 17)) {
     for(k in 0:13) {
       tmp <- append(tmp, prod(coin[j:(j + k)]))
     }
@@ -57,10 +57,10 @@ test_y <- as.matrix(out[(nrow(out) - 49):nrow(out), -c("period")])
 early_stop <- callback_early_stopping(monitor = "val_loss", patience = 20)
 
 model <- keras_model_sequential() %>% 
-  layer_lstm(units = 64, return_sequences = T, 
-                           dropout = 0.2, recurrent_dropout = 0.2, 
-                           activation = "relu", input_shape = c(14, 7)) %>%
-  layer_dense(units = 96, dropout = 0.5, activation = "relu") %>%
+  layer_lstm(units = 64, dropout = 0.2, recurrent_dropout = 0.2, 
+             activation = "relu", input_shape = c(14, 7)) %>%
+  layer_dense(units = 96, activation = "relu") %>%
+  layer_dropout(rate = 0.5) %>%
   layer_dense(units = 3, activation = "softmax")
 
 model %>% compile(
