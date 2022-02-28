@@ -13,19 +13,29 @@ test <- as.data.table(test)
 head(train)
 train[, .N, by = "Transported"]
 
+#PassengerId
+train[, PassengerClass := str_sub(PassengerId, start = -2)]
+test[, PassengerClass := str_sub(PassengerId, start = -2)]
+
+ggplot(train, aes(Transported, fill = PassengerClass)) +
+  geom_bar(position = "fill") +
+  theme_minimal()
+
+#HomePlanet
 ggplot(train, aes(HomePlanet, fill = Transported)) +
   geom_bar() +
   theme_minimal()
 
+#CryoSleep
 ggplot(train, aes(CryoSleep, fill = Transported)) +
   geom_bar() +
   theme_minimal()
 
+#Cabin
 train[, CabinFirst := str_sub(Cabin, end = 1)]
 train[, CabinLast := str_sub(Cabin, start = -1)]
 test[, CabinFirst := str_sub(Cabin, end = 1)]
 test[, CabinLast := str_sub(Cabin, start = -1)]
-head(train)
 
 ggplot(train, aes(CabinFirst, fill = Transported)) +
   geom_bar() +
@@ -39,10 +49,12 @@ ggplot(train[!is.na(Cabin)], aes(CabinLast, fill = CabinFirst)) +
   geom_bar() +
   theme_minimal()
 
+#Destination
 ggplot(train, aes(Destination, fill = Transported)) +
   geom_bar() +
   theme_minimal()
 
+#Age
 ggplot(train[!is.na(Age)], aes(Age)) +
   geom_density() +
   theme_minimal()
@@ -55,10 +67,12 @@ ggplot(train[!is.na(Age)], aes(Transported, Age)) +
 
 wilcox.test(Age ~ Transported, data = train[!is.na(Age)])
 
+#VIP
 ggplot(train, aes(VIP, fill = Transported)) +
   geom_bar() +
   theme_bw()
 
+#Total Expenditures
 train[, Expenditures := RoomService + FoodCourt + ShoppingMall + Spa + VRDeck]
 test[, Expenditures := RoomService + FoodCourt + ShoppingMall + Spa + VRDeck]
 
@@ -70,6 +84,7 @@ ggplot(train[!is.na(Expenditures), .(Expenditures = Expenditures + 1, Transporte
 
 train[Expenditures > 0, .N, by = "Transported"]
 
+#RoomService
 ggplot(train[!is.na(RoomService), .(RoomService = RoomService + 1, Transported)], 
        aes(RoomService, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -78,6 +93,7 @@ ggplot(train[!is.na(RoomService), .(RoomService = RoomService + 1, Transported)]
 
 train[RoomService > 0, .N, by = "Transported"]
 
+#FoodCourt
 ggplot(train[!is.na(FoodCourt), .(FoodCourt = FoodCourt + 1, Transported)], 
        aes(FoodCourt, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -86,6 +102,7 @@ ggplot(train[!is.na(FoodCourt), .(FoodCourt = FoodCourt + 1, Transported)],
 
 train[FoodCourt > 0, .N, by = "Transported"]
 
+#ShoppingMall
 ggplot(train[!is.na(ShoppingMall), .(ShoppingMall = ShoppingMall + 1, Transported)], 
        aes(ShoppingMall, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -94,6 +111,7 @@ ggplot(train[!is.na(ShoppingMall), .(ShoppingMall = ShoppingMall + 1, Transporte
 
 train[ShoppingMall > 0, .N, by = "Transported"]
 
+#Spa
 ggplot(train[!is.na(Spa), .(Spa = Spa + 1, Transported)], 
        aes(Spa, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -102,6 +120,7 @@ ggplot(train[!is.na(Spa), .(Spa = Spa + 1, Transported)],
 
 train[Spa > 0, .N, by = "Transported"]
 
+#VRDeck
 ggplot(train[!is.na(VRDeck), .(VRDeck = VRDeck + 1, Transported)], 
        aes(VRDeck, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -110,10 +129,11 @@ ggplot(train[!is.na(VRDeck), .(VRDeck = VRDeck + 1, Transported)],
 
 train[VRDeck > 0, .N, by = "Transported"]
 
-train_set <- train[, c(2:3, 5:6, 8:12, 14:17)]
+#Model
+train_set <- train[, c(2:3, 5:6, 8:12, 14:18)]
 train_set[, Transported := fifelse((Transported), "1", "0")]
 train_set[, CryoSleep := fifelse((CryoSleep), "1", "0")]
-test_set <- test[, c(2:3, 5:6, 8:12, 14:16)]
+test_set <- test[, c(2:3, 5:6, 8:12, 14:17)]
 test_set[, CryoSleep := fifelse((CryoSleep), "1", "0")]
 
 xgb_rec <- 
@@ -121,6 +141,7 @@ xgb_rec <-
   step_normalize(all_numeric_predictors()) %>%
   step_string2factor(all_nominal_predictors()) %>%
   step_impute_knn(all_predictors(), neighbors = 10) %>%
+  step_other(all_nominal_predictors()) %>%
   step_dummy(all_nominal_predictors(), one_hot = T) %>%
   step_nzv(all_predictors())
 
@@ -220,6 +241,7 @@ xgb_pred <- predict(xgb_model, new_data = test_set, type = "prob")
 
 rf_model <- fit(rf_final, train_set)
 rf_pred <- predict(rf_model, new_data = test_set, type = "prob")
+
 sub <- data.table(PassengerId = test$PassengerId, 
                   Transported = 0.5 * xgb_pred$.pred_1 + 0.5 * rf_pred$.pred_1)
 sub[, Transported := fifelse(Transported > 0.5, "True", "False")]
