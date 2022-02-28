@@ -3,6 +3,7 @@ library(data.table)
 library(tidymodels)
 library(doParallel)
 library(stringr)
+library(OneR)
 library(vip)
 
 train <- read_csv("train.csv")
@@ -76,7 +77,8 @@ ggplot(train, aes(VIP, fill = Transported)) +
 train[, Expenditures := RoomService + FoodCourt + ShoppingMall + Spa + VRDeck]
 test[, Expenditures := RoomService + FoodCourt + ShoppingMall + Spa + VRDeck]
 
-ggplot(train[!is.na(Expenditures), .(Expenditures = Expenditures + 1, Transported)], 
+ggplot(train[!is.na(Expenditures), 
+             .(Expenditures = Expenditures + 1, Transported)], 
        aes(Transported, Expenditures)) +
   geom_boxplot() +
   scale_y_log10() +
@@ -85,7 +87,8 @@ ggplot(train[!is.na(Expenditures), .(Expenditures = Expenditures + 1, Transporte
 train[Expenditures > 0, .N, by = "Transported"]
 
 #RoomService
-ggplot(train[!is.na(RoomService), .(RoomService = RoomService + 1, Transported)], 
+ggplot(train[!is.na(RoomService), 
+             .(RoomService = RoomService + 1, Transported)], 
        aes(RoomService, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
   scale_x_log10() +
@@ -103,7 +106,8 @@ ggplot(train[!is.na(FoodCourt), .(FoodCourt = FoodCourt + 1, Transported)],
 train[FoodCourt > 0, .N, by = "Transported"]
 
 #ShoppingMall
-ggplot(train[!is.na(ShoppingMall), .(ShoppingMall = ShoppingMall + 1, Transported)], 
+ggplot(train[!is.na(ShoppingMall), 
+             .(ShoppingMall = ShoppingMall + 1, Transported)], 
        aes(ShoppingMall, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
   scale_x_log10() +
@@ -129,11 +133,42 @@ ggplot(train[!is.na(VRDeck), .(VRDeck = VRDeck + 1, Transported)],
 
 train[VRDeck > 0, .N, by = "Transported"]
 
+#WOE Buckets for PassengerID and CabinLast
+train[, Transported := fifelse((Transported), "1", "0")]
+
+woe_buckets <- function(vname, nb) {
+  
+  buck1 <- train[Transported == "1", 
+                 .N / nrow(train[Transported == "1"]), by = vname]
+  buck0 <- train[Transported == "0", 
+                 .N / nrow(train[Transported == "0"]), by = vname]
+  buck <- merge(na.omit(buck1), na.omit(buck0), by = vname, all = T)
+  
+  buck[is.na(V1.x), V1.x := 1 / nrow(train[Transported == "1"])]
+  buck[is.na(V1.y), V1.y := 1 / nrow(train[Transported == "0"])]
+  
+  buck[, woe := log(V1.x / V1.y)]
+  buck <- merge(na.omit(train[, ..vname]), buck, by = vname, all = T)
+  buck[, bins := bin(woe, nbins = nb, method = "content", na.omit = F)]
+  buck <- unique(buck, by = vname)
+  
+  buck[, c("V1.x", "V1.y") := lapply(.SD, sum), 
+      .SDcols = c("V1.x", "V1.y"), by = "bins"]
+  buck[, woe := log(V1.x / V1.y), by = "bins"] %>% 
+    .[, iv := woe * (V1.x - V1.y), by = "bins"]
+  setnames(buck, "bins", paste0(vname, "Bins"))
+  
+  train <<- merge(train, buck[, c(1, 5)], by = vname, all.x = T)
+  test <<- merge(test, buck[, c(1, 5)], by = vname, all.x = T)
+}
+
+vnames <- colnames(train[, .(PassengerClass, CabinFirst)])
+lapply(vnames, function(x) {woe_buckets(x, 3)})
+
 #Model
-train_set <- train[, c(2:3, 5:6, 8:12, 14:18)]
-train_set[, Transported := fifelse((Transported), "1", "0")]
+train_set <- train[, c(4:5, 7:8, 10:14, 16:20)]
 train_set[, CryoSleep := fifelse((CryoSleep), "1", "0")]
-test_set <- test[, c(2:3, 5:6, 8:12, 14:17)]
+test_set <- test[, c(4:5, 7:8, 10:14, 16:19)]
 test_set[, CryoSleep := fifelse((CryoSleep), "1", "0")]
 
 xgb_rec <- 
@@ -141,7 +176,6 @@ xgb_rec <-
   step_normalize(all_numeric_predictors()) %>%
   step_string2factor(all_nominal_predictors()) %>%
   step_impute_knn(all_predictors(), neighbors = 10) %>%
-  step_other(all_nominal_predictors()) %>%
   step_dummy(all_nominal_predictors(), one_hot = T) %>%
   step_nzv(all_predictors())
 
@@ -150,7 +184,7 @@ rf_rec <-
   step_normalize(all_numeric_predictors()) %>%
   step_string2factor(all_nominal_predictors()) %>%
   step_impute_knn(all_predictors(), neighbors = 10) %>%
-  step_other(all_nominal_predictors())
+  step_nzv(all_predictors())
 
 prep(xgb_rec)
 prep(rf_rec)
