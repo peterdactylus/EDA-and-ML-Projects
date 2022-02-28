@@ -78,9 +78,6 @@ ggplot(train[!is.na(RoomService), .(RoomService = RoomService + 1, Transported)]
 
 train[RoomService > 0, .N, by = "Transported"]
 
-train[, RoomService := fifelse(RoomService > 0, "1", "0")]
-test[, RoomService := fifelse(RoomService > 0, "1", "0")]
-
 ggplot(train[!is.na(FoodCourt), .(FoodCourt = FoodCourt + 1, Transported)], 
        aes(FoodCourt, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -105,9 +102,6 @@ ggplot(train[!is.na(Spa), .(Spa = Spa + 1, Transported)],
 
 train[Spa > 0, .N, by = "Transported"]
 
-train[, Spa := fifelse(Spa > 0, "1", "0")]
-test[, Spa := fifelse(Spa > 0, "1", "0")]
-
 ggplot(train[!is.na(VRDeck), .(VRDeck = VRDeck + 1, Transported)], 
        aes(VRDeck, fill = Transported, color = Transported)) +
   geom_density(alpha = 0.5) +
@@ -115,9 +109,6 @@ ggplot(train[!is.na(VRDeck), .(VRDeck = VRDeck + 1, Transported)],
   theme_bw()
 
 train[VRDeck > 0, .N, by = "Transported"]
-
-train[, VRDeck := fifelse(VRDeck > 0, "1", "0")]
-test[, VRDeck := fifelse(VRDeck > 0, "1", "0")]
 
 train_set <- train[, c(2:3, 5:6, 8:12, 14:17)]
 train_set[, Transported := fifelse((Transported), "1", "0")]
@@ -153,7 +144,7 @@ xgb_spec <- boost_tree(
   set_engine("xgboost", validation = 0.2)
 
 rf_spec <- rand_forest(
-  trees = 750, 
+  trees = 1000, 
   mtry = tune(), 
   min_n = tune()
 ) %>%
