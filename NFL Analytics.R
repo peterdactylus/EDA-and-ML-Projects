@@ -117,6 +117,27 @@ ggplot(niners, aes(epa_pass, epa_total, color = QB)) +
   theme(plot.title = element_text(hjust = 0.5)) +
   theme(plot.subtitle = element_text(hjust = 0.5))
 
+#First Half Timeouts
+to <- data[season == 2021 & week < 19 & game_half == "Half1", 
+           .(timeout_team, half_seconds_remaining, week)]
+to <- na.omit(to)
+to[, EntireHalf := .N, by = "timeout_team"]
+to[half_seconds_remaining <= 240, LastFourMin := .N, by = "timeout_team"]
+to[, EntireHalf := EntireHalf - LastFourMin]
+to <- na.omit(unique(to[, .(timeout_team, EntireHalf, LastFourMin)]))
+to <- melt(to, id.vars = "timeout_team", 
+           variable.name = "Timeouts", value.name = "total")
+to <- rbind(to, data.table("POS", "EntireHalf", 3*17), use.names = F)
+
+ggplot(to, aes(reorder(timeout_team, -total), total, fill = Timeouts)) +
+  geom_col() +
+  theme_minimal() +
+  labs(title = "Which Teams used their First Half Timeouts?", 
+       subtitle = "2021 Regular Season", 
+       x = "Team", y = "Timeouts Taken") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5))
+
 #First Quarter Scores
 test <- data[qtr == 1 & half_seconds_remaining == 900]
 test[, score := posteam_score + defteam_score]
